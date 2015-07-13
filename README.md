@@ -1,0 +1,2 @@
+# LxIAPManager
+Apple IAP capsulation.
