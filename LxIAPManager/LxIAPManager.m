@@ -5,6 +5,19 @@
 
 #import "LxIAPManager.h"
 
+#define RESTRICT_RESPONSE_WITH_INTERVAL(intervalSeconds) static BOOL responseEnable = YES;   \
+if (responseEnable == NO) { \
+    return; \
+}   \
+else {  \
+    responseEnable = NO;    \
+    dispatch_time_t delayTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(intervalSeconds * NSEC_PER_SEC)); \
+    dispatch_after(delayTime, dispatch_get_main_queue(), ^(void){ \
+        responseEnable = YES;   \
+    }); \
+}
+
+static CGFloat INTERVAL_SECONDS = 1.0;
 
 @interface LxIAPManager () <SKProductsRequestDelegate, SKPaymentTransactionObserver>
 
@@ -21,6 +34,15 @@
         defaultManager = [[self alloc]init];
     });
     return defaultManager;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [[SKPaymentQueue defaultQueue] addTransactionObserver:self];
+    }
+    return self;
 }
 
 - (void)dealloc
@@ -65,8 +87,7 @@
             [self.delegate iapManager:self fetchProductsFailedForInvalidProductIdentifiers:@[]];
         }
     }
-    
-    if ([self.delegate respondsToSelector:@selector(iapManager:didFetchedProductArray:)]) {
+    else if ([self.delegate respondsToSelector:@selector(iapManager:didFetchedProductArray:)]) {
         [self.delegate iapManager:self didFetchedProductArray:response.products];
     }
 }
@@ -75,6 +96,8 @@
 
 - (void)purchaseProductWithIdentifier:(NSString *)productIdentifier
 {
+    RESTRICT_RESPONSE_WITH_INTERVAL(INTERVAL_SECONDS);
+    
     BOOL hasUnfinishedTransactions = NO;
     
     for (SKPaymentTransaction * paymentTransaction in [SKPaymentQueue defaultQueue].transactions) {
