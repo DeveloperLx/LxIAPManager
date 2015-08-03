@@ -6,21 +6,23 @@
 #import "LxIAPManager.h"
 
 #define RESTRICT_RESPONSE_WITH_INTERVAL(intervalSeconds) static BOOL responseEnable = YES;   \
-if (responseEnable == NO) { \
-    return; \
-}   \
-else {  \
+if (responseEnable) { \
     responseEnable = NO;    \
     dispatch_time_t delayTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(intervalSeconds * NSEC_PER_SEC)); \
     dispatch_after(delayTime, dispatch_get_main_queue(), ^(void){ \
         responseEnable = YES;   \
     }); \
+}   \
+else {  \
+    return; \
 }
 
 static CGFloat INTERVAL_SECONDS = 1.0;
 
 @interface LxIAPManager () <SKProductsRequestDelegate, SKPaymentTransactionObserver>
-
+{
+    id _observer;
+}
 @end
 
 @implementation LxIAPManager
@@ -41,6 +43,12 @@ static CGFloat INTERVAL_SECONDS = 1.0;
     self = [super init];
     if (self) {
         [[SKPaymentQueue defaultQueue] addTransactionObserver:self];
+        _observer = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidEnterBackgroundNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+           
+            for (SKPaymentTransaction * paymentTransaction in [SKPaymentQueue defaultQueue].transactions) {
+                [[SKPaymentQueue defaultQueue]finishTransaction:paymentTransaction];
+            }
+        }];
     }
     return self;
 }
@@ -48,6 +56,8 @@ static CGFloat INTERVAL_SECONDS = 1.0;
 - (void)dealloc
 {
     [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
+    [[NSNotificationCenter defaultCenter]removeObserver:_observer];
+    _observer = nil;
 }
 
 + (BOOL)iapEnable
