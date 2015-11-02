@@ -4,6 +4,9 @@
 ### Installation
     You only need drag LxIAPManager.h and LxIAPManager.m to your project.
 
+### Podfile
+    pod 'LxIAPManager', '~> 1.0.0'
+
 ### Support
     Minimum support iOS version: iOS 7.0
 
